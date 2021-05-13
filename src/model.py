@@ -1,10 +1,12 @@
 import os
 import datetime
-from keras.layers import Activation, Dense, Dropout, Conv2D, \
+from tensorflow.keras.layers import Activation, Dense, Dropout, Conv2D, \
     Flatten, MaxPooling2D
-from keras.models import Sequential
+from tensorflow.keras.models import Sequential, model_from_json
 from src.metrics import *
-from settings import LOG_DIR_TRAINING, MODEL_JSON, MODEL_DIR, MODEL_H5
+from settings import LOG_DIR_TRAINING, MODEL_JSON, MODEL_DIR, MODEL_H5, MODEL_SAVE_MODEL, CLASSES
+import librosa
+import numpy as np
 
 
 class CNN(object):
@@ -56,7 +58,7 @@ class CNN(object):
         self.model.fit(
             x=X_train,
             y=y_train,
-            epochs=67,
+            epochs=50,
             batch_size=20,
             validation_data=(X_test, y_test),
             callbacks=[tensorboard_callback])
@@ -86,7 +88,8 @@ class CNN(object):
         print(f'Test f1-score: {self.score_test[4]}')
 
     def save_model(self):
-        print('Saving model')
+        self.model.save(MODEL_SAVE_MODEL)
+        print("Save sie udal")
         # serialize model to JSON
         model_json = self.model.to_json()
         with open(MODEL_JSON, "w") as json_file:
@@ -94,3 +97,32 @@ class CNN(object):
         # serialize weights to HDF5
         self.model.save_weights(MODEL_H5)
         print("Saved model to "+MODEL_DIR)
+
+    def load_model(self):
+        # load json and create model
+        try:
+            with open(MODEL_JSON, "r") as json_file:
+                loaded_model_json = json_file.read()
+            loaded_model = model_from_json(loaded_model_json)
+            # load weights into new model
+            loaded_model.load_weights(MODEL_H5)
+            loaded_model.compile(
+                optimizer="Adam",
+                loss="categorical_crossentropy",
+                metrics=['accuracy', precision, recall, fmeasure])
+            self.model = loaded_model
+        except:
+            print("Model not found")
+
+    def predict(self, filepath):
+        y, sr = librosa.load(filepath, duration=2, sr=44100)
+        ps = librosa.feature.melspectrogram(y=y, sr=sr)
+        px = ps
+        print(px.shape)
+        shape = (1,) + self.input_shape
+        ps = np.array(ps.reshape(shape))
+        predictions = self.model.predict_classes(ps)
+        print(predictions)
+        class_id = predictions[0]
+        chord = str(CLASSES[class_id])
+        print("The recorded chord is " + chord)

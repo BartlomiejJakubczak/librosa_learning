@@ -28,7 +28,7 @@ def features_target_split(data):
 
 def reshape_feature_CNN(features):
     print(f"Features reshaped for CNN Input")
-    return np.array([feature.reshape( (128, 87, 1) ) for feature in features])
+    return np.array([feature.reshape( (128, 173, 1) ) for feature in features])
 
 
 def one_hot_encode(target):

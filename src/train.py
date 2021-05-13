@@ -1,13 +1,26 @@
 import pandas as pd
 import os
-from settings import PROCESSED_METADATA_DIR, CLASSES
-from src.preprocessing import get_most_shape
+from settings import PROCESSED_METADATA_DIR, CLASSES, AUGMENTED_PROCESSED_METADATA_DIR
+from src.preprocessing import *
 from src.processing import *
 from src.model import CNN
 from sklearn.metrics import confusion_matrix
+from src import augment
 
 if __name__ == '__main__':
-    dataset = pd.read_pickle(os.path.join(PROCESSED_METADATA_DIR, 'data.pkl'))
+    augmented = True
+    if augmented:
+        if not os.path.exists(os.path.join(AUGMENTED_PROCESSED_METADATA_DIR, 'data.pkl')):
+            augment.main()
+            # Read Data
+        dataset = pd.read_pickle(os.path.join(AUGMENTED_PROCESSED_METADATA_DIR, 'data.pkl'))
+
+    else:
+        # Generate MetaData if not generated yet
+        if not os.path.exists(os.path.join(PROCESSED_METADATA_DIR, 'data.pkl')):
+            run()
+        dataset = pd.read_pickle(os.path.join(PROCESSED_METADATA_DIR, 'data.pkl'))
+
     print(f"Number of samples: {len(dataset)}")
     most_shape = get_most_shape(dataset)
     train_data, test_data = train_test_split(dataset, augmented=False, split_ratio=0.65)
